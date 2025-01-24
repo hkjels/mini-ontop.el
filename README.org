@@ -1,0 +1,62 @@
+* mini-ontop.el
+
+** Introduction
+
+mini-ontop is a small Emacs package that prevents the “jump” or recentering of
+the main editing window whenever a multi-line minibuffer (for instance from
+icomplete-vertical-mode) is triggered. By automatically adjusting point just
+enough before showing the minibuffer, Emacs won’t force the screen to scroll.
+
+This solves a common annoyance where pressing ~M-x~ or any other command that
+opens a multi-line minibuffer can cause your main window to jump up a few lines
+or flicker.
+
+No special configuration is required—just enable ~mini-ontop-mode~ and enjoy
+a calmer editing experience.
+
+** Installation
+
+If you’re running Emacs 29 or later, you can install directly from the GitHub
+repo using ~package-vc-install~. For example, with ~use-package~:
+
+#+begin_src emacs-lisp
+(use-package mini-ontop
+  :preface
+  (unless (package-installed-p 'mini-ontop)
+    (package-vc-install
+     '(mini-ontop
+       :vc-backend 'Git
+       :url "https://github.com/hkjels/mini-ontop.el"
+       :branch "main")))
+  :config
+  (mini-ontop-mode 1))
+#+end_src
+
+** Customization
+
+The idea is that mini-ontop should JUST work. If you however
+experience issues, you can try to configure ~mini-ontop-lines~.
+If you allow a really tall mini-buffer or you have a really tiny
+screen, this could be necessary.
+
+** Contributing
+
+1. Fork the repository on GitHub.
+2. Create a feature branch for your changes.
+3. Open a Pull Request describing your modifications or improvements.
+
+Bugs, suggestions, and other feedback are welcome via the GitHub issue tracker.
+
+** License
+
+mini-ontop is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+mini-ontop is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+Emacs.  If not, see https://www.gnu.org/licenses/.
