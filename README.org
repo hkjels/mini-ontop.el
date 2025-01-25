@@ -14,30 +14,33 @@ or flicker.
 No special configuration is required—just enable ~mini-ontop-mode~ and enjoy
 a calmer editing experience.
 
-** Installation
+[[./mini-ontop.gif]]
 
-If you’re running Emacs 29 or later, you can install directly from the GitHub
-repo using ~package-vc-install~. For example, with ~use-package~:
+** Installation
 
 #+begin_src emacs-lisp
 (use-package mini-ontop
-  :preface
-  (unless (package-installed-p 'mini-ontop)
-    (package-vc-install
-     '(mini-ontop
-       :vc-backend 'Git
-       :url "https://github.com/hkjels/mini-ontop.el"
-       :branch "main")))
-  :config
-  (mini-ontop-mode 1))
+  :ensure t
+  :config (mini-ontop-mode 1))
 #+end_src
 
 ** Customization
 
-The idea is that mini-ontop should JUST work. If you however
-experience issues, you can try to configure ~mini-ontop-lines~.
-If you allow a really tall mini-buffer or you have a really tiny
-screen, this could be necessary.
+	•	mini-ontop-lines: Controls how many lines from the window’s bottom trigger
+the point adjustment. If you have a really tall minibuffer or a small screen,
+increasing this value helps ensure there’s enough space.
+	•	mini-ontop-ignore-predicates: A list of zero-argument functions (predicates).
+If any of these functions returns non-nil, mini-ontop will skip moving the
+point up for that particular window/buffer combination. This is useful for
+ignoring certain modes or commands (e.g., if you want to disable the behavior
+while using ivy-yasnippet or other special minibuffer-driven workflows).
+Example usage:
+#+begin_src emacs-lisp
+(add-to-list ’mini-ontop-ignore-predicates (lambda () (bound-and-true-p ivy-yasnippet–active)))
+#+end_src
+
+These two options give you the flexibility to fine-tune mini-ontop so that it
+“just works” in your environment, while still respecting any special cases.
 
 ** Contributing
 
