@@ -2,8 +2,8 @@
 ;;
 ;; Author: Henrik Kjerringvåg <henrik@kjerringvag.no>
 ;; URL: https://github.com/hkjels/mini-ontop.el
-;; Version: 0.1
-;; Package-Requires: ((emacs "26.1"))
+;; Version: 0.2
+;; Package-Requires: ((emacs "26.1") cl-lib)
 ;; Keywords: convenience
 ;;
 ;; This file is not part of GNU Emacs.
@@ -67,11 +67,9 @@ move it up by the difference."
   :type 'integer
   :group 'mini-ontop)
 
-(defvar mini-ontop--saved-buffer nil
-  "Buffer where point was adjusted, so we can restore it.")
-
-(defvar mini-ontop--saved-point nil
-  "Original position of point in that buffer, to restore on minibuffer exit.")
+(defvar mini-ontop--saved-positions nil
+  "List of saved positions for each window that had its point moved.
+Each element is (WINDOW BUFFER POINT).")
 
 (defun mini-ontop--any-predicate-p ()
   "Evaluate the predicates in `mini-ontop-ignore-predicates'."
@@ -80,51 +78,57 @@ move it up by the difference."
 (defun mini-ontop--distance-to-bottom (win)
   "Return how many buffer lines exist between point and WIN's bottom."
   (save-excursion
-    (let ((current-line (line-number-at-pos (point)))
-          (bottom-line  (progn
-                          (goto-char (window-end win t))
-                          (line-number-at-pos (point)))))
-      (max 0 (- bottom-line current-line)))))
+    (with-selected-window win
+      (let ((current-line (line-number-at-pos (point)))
+            (bottom-line  (progn
+                            (goto-char (window-end win t))
+                            (line-number-at-pos (point)))))
+        (max 0 (- bottom-line current-line))))))
 
-(defun mini-ontop--move-point-up-if-needed ()
-  "If point is within `mini-ontop-lines` lines of window bottom, move it up."
-  (unless (or (region-active-p)
-              (mini-ontop--any-predicate-p))
-    (let ((win (selected-window)))
-      (unless (minibufferp (window-buffer win))
+(defun mini-ontop--move-point-up-for-window (win)
+  "Check WIN: if point is within `mini-ontop-lines' lines of bottom, move it up.
+Return t if point was moved, nil otherwise."
+  (with-selected-window win
+    (let ((buf (window-buffer win)))
+      (unless (or (region-active-p)
+                  (minibufferp buf)
+                  (mini-ontop--any-predicate-p))
         (let ((dist (mini-ontop--distance-to-bottom win)))
           (when (< dist mini-ontop-lines)
             (let ((needed (- mini-ontop-lines dist)))
-              (setq mini-ontop--saved-buffer (current-buffer)
-                    mini-ontop--saved-point  (point))
-              (forward-line (- needed)))))))))
+              (push (list win buf (point)) mini-ontop--saved-positions)
+              (forward-line (- needed))
+              t)))))))
+
+(defun mini-ontop--move-point-up-if-needed-everywhere ()
+  "For each live window, move point up if needed."
+  (setq mini-ontop--saved-positions nil)
+  (dolist (win (window-list))
+    (mini-ontop--move-point-up-for-window win)))
 
 (defun mini-ontop--restore-point ()
-  "Restore the original point if we haven't moved too far."
-  (when mini-ontop--saved-buffer
-    (with-current-buffer mini-ontop--saved-buffer
-      (let ((win (get-buffer-window mini-ontop--saved-buffer))
-            (current-pos (point)))
-        (when (window-live-p win)
-          (select-window win)
-          (when (<= (line-number-at-pos (abs (- current-pos mini-ontop--saved-point)))
-                    (- (line-number-at-pos mini-ontop--saved-point) (+ mini-ontop-lines 1)))
-            (goto-char mini-ontop--saved-point))))
-      (setq mini-ontop--saved-buffer nil
-            mini-ontop--saved-point  nil))))
+  "Restore the original point in all windows that were adjusted."
+  (dolist (entry mini-ontop--saved-positions)
+    (cl-destructuring-bind (win buf pt) entry
+      (when (and (window-live-p win)
+                 (buffer-live-p buf))
+        (with-selected-window win
+          (with-current-buffer buf
+            (goto-char pt))))))
+  (setq mini-ontop--saved-positions nil))
 
 (defun mini-ontop--exit-hook (&rest _args)
-  "Hook run upon minibuffer exit, restore point if needed."
+  "Hook run upon minibuffer exit; restore points if needed."
   (mini-ontop--restore-point)
   (remove-hook 'minibuffer-exit-hook #'mini-ontop--exit-hook))
 
 (defun mini-ontop--teardown (&rest _args)
-  "Run after `read-from-minibuffer`—remove the exit hook for cleanup."
+  "Run after `read-from-minibuffer`; remove the exit hook for cleanup."
   (remove-hook 'minibuffer-exit-hook #'mini-ontop--exit-hook))
 
 (defun mini-ontop--setup (&rest _args)
-  "Run before `read-from-minibuffer` to move point up if needed."
-  (mini-ontop--move-point-up-if-needed)
+  "Run before `read-from-minibuffer`; move point up in all windows if needed."
+  (mini-ontop--move-point-up-if-needed-everywhere)
   (add-hook 'minibuffer-exit-hook #'mini-ontop--exit-hook))
 
 ;;;###autoload
