@@ -60,10 +60,21 @@ or any custom condition you want to exclude from this behavior."
   :type '(repeat function)
   :group 'mini-ontop)
 
-(defcustom mini-ontop-lines 20
+(defcustom mini-ontop-lines
+  (let* ((fraction (if (floatp max-mini-window-height)
+                       max-mini-window-height
+                     (/ (float max-mini-window-height) (frame-height))))
+         (approx-lines (round (* (frame-height) fraction))))
+    (max 10 (+ 2 approx-lines)))
   "Number of lines to jump to make sure scroll does not occur.
-If point is closer than this many lines to the bottom,
-move it up by the difference."
+
+This default attempts to estimate a good value by looking at
+`max-mini-window-height`.  If you're using a specialized completion
+framework (e.g. Ivy, Vertico, icomplete-vertical) that can
+show many lines, you may need to set this higher.
+
+Set this to a comfortably larger number than your typical
+minibuffer height to avoid any jump/flicker."
   :type 'integer
   :group 'mini-ontop)
 

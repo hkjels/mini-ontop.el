@@ -26,9 +26,10 @@ a calmer editing experience.
 
 ** Customization
 
-	•	mini-ontop-lines: Controls how many lines from the window’s bottom trigger
-the point adjustment. If you have a really tall minibuffer or a small screen,
-increasing this value helps ensure there’s enough space.
+	•	mini-ontop-lines: By default, ~mini-ontop-lines~ attempts to compute a reasonable
+estimate based on Emacs’ ~max-mini-window-height~. However, your
+setup might need fine-tuning. If you still see jumps/flicker, try
+increasing ~mini-ontop-lines~.
 	•	mini-ontop-ignore-predicates: A list of zero-argument functions (predicates).
 If any of these functions returns non-nil, mini-ontop will skip moving the
 point up for that particular window/buffer combination. This is useful for
