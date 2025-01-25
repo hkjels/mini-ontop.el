@@ -90,11 +90,8 @@ Each element is (WINDOW BUFFER POINT).")
   "Return how many buffer lines exist between point and WIN's bottom."
   (save-excursion
     (with-selected-window win
-      (let ((current-line (line-number-at-pos (point)))
-            (bottom-line  (progn
-                            (goto-char (window-end win t))
-                            (line-number-at-pos (point)))))
-        (max 0 (- bottom-line current-line))))))
+      (max 0 (- (floor (window-screen-lines))
+            (count-screen-lines (window-start) (point)))))))
 
 (defun mini-ontop--move-point-up-for-window (win)
   "Check WIN: if point is within `mini-ontop-lines' lines of bottom, move it up.
