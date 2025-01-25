@@ -91,7 +91,7 @@ Each element is (WINDOW BUFFER POINT).")
   (save-excursion
     (with-selected-window win
       (max 0 (- (floor (window-screen-lines))
-            (count-screen-lines (window-start) (point)))))))
+                (count-screen-lines (window-start) (point)))))))
 
 (defun mini-ontop--move-point-up-for-window (win)
   "Check WIN: if point is within `mini-ontop-lines' lines of bottom, move it up.
@@ -106,8 +106,8 @@ Return t if point was moved, nil otherwise."
           (when (and (< dist mini-ontop-lines)
                      (< needed (ceiling (- (window-screen-lines) dist 1))))
             (push (list win buf (point)) mini-ontop--saved-positions)
-              (line-move (- needed) t)
-              t))))))
+            (line-move (- needed) t)
+            t))))))
 
 (defun mini-ontop--move-point-up-if-needed-everywhere (&rest _args)
   "For each live window, move point up if needed."
