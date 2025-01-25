@@ -109,13 +109,13 @@ Return t if point was moved, nil otherwise."
               (previous-line needed)
               t)))))))
 
-(defun mini-ontop--move-point-up-if-needed-everywhere ()
+(defun mini-ontop--move-point-up-if-needed-everywhere (&rest _args)
   "For each live window, move point up if needed."
   (setq mini-ontop--saved-positions nil)
   (dolist (win (window-list))
     (mini-ontop--move-point-up-for-window win)))
 
-(defun mini-ontop--restore-point ()
+(defun mini-ontop--restore-point (&rest _args)
   "Restore the original point in all windows that were adjusted."
   (dolist (entry mini-ontop--saved-positions)
     (cl-destructuring-bind (win buf pt) entry
@@ -126,30 +126,16 @@ Return t if point was moved, nil otherwise."
             (goto-char pt))))))
   (setq mini-ontop--saved-positions nil))
 
-(defun mini-ontop--exit-hook (&rest _args)
-  "Hook run upon minibuffer exit; restore points if needed."
-  (mini-ontop--restore-point)
-  (remove-hook 'minibuffer-exit-hook #'mini-ontop--exit-hook))
-
-(defun mini-ontop--teardown (&rest _args)
-  "Run after `read-from-minibuffer`; remove the exit hook for cleanup."
-  (remove-hook 'minibuffer-exit-hook #'mini-ontop--exit-hook))
-
-(defun mini-ontop--setup (&rest _args)
-  "Run before `read-from-minibuffer`; move point up in all windows if needed."
-  (mini-ontop--move-point-up-if-needed-everywhere)
-  (add-hook 'minibuffer-exit-hook #'mini-ontop--exit-hook))
-
 ;;;###autoload
 (define-minor-mode mini-ontop-mode
   "Global minor mode to prevent windows from jumping on minibuffer activation."
   :global t
   (if mini-ontop-mode
       (progn
-        (advice-add 'read-from-minibuffer :before #'mini-ontop--setup)
-        (advice-add 'read-from-minibuffer :after  #'mini-ontop--teardown))
-    (advice-remove 'read-from-minibuffer #'mini-ontop--setup)
-    (advice-remove 'read-from-minibuffer #'mini-ontop--teardown)))
+        (advice-add 'read-from-minibuffer :before #'mini-ontop--move-point-up-if-needed-everywhere)
+        (add-hook 'minibuffer-exit-hook #'mini-ontop--restore-point))
+    (advice-remove 'read-from-minibuffer #'mini-ontop--move-point-up-if-needed-everywhere)
+    (remove-hook 'minibuffer-exit-hook #'mini-ontop--restore-point)))
 
 (provide 'mini-ontop)
 ;;; mini-ontop.el ends here
