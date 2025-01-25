@@ -45,9 +45,20 @@
 ;;
 ;;; Code:
 
+(require 'cl-lib)
+
 (defgroup mini-ontop nil
   "Preempt scrolling by moving point up before the minibuffer is used."
   :group 'convenience)
+
+(defcustom mini-ontop-ignore-predicates nil
+  "List of predicates to prevent mini-ontop behavior.
+If *any* of them returns non-nil, `mini-ontop-mode' will skip moving point up.
+
+For example, you could add a predicate that checks if `ivy-yasnippet' is active,
+or any custom condition you want to exclude from this behavior."
+  :type '(repeat function)
+  :group 'mini-ontop)
 
 (defcustom mini-ontop-lines 20
   "Number of lines to jump to make sure scroll does not occur.
@@ -62,6 +73,10 @@ move it up by the difference."
 (defvar mini-ontop--saved-point nil
   "Original position of point in that buffer, to restore on minibuffer exit.")
 
+(defun mini-ontop--any-predicate-p ()
+  "Evaluate the predicates in `mini-ontop-ignore-predicates'."
+  (cl-some (lambda (pred) (funcall pred)) mini-ontop-ignore-predicates))
+
 (defun mini-ontop--distance-to-bottom (win)
   "Return how many buffer lines exist between point and WIN's bottom."
   (save-excursion
@@ -73,7 +88,8 @@ move it up by the difference."
 
 (defun mini-ontop--move-point-up-if-needed ()
   "If point is within `mini-ontop-lines` lines of window bottom, move it up."
-  (when (not (region-active-p))
+  (unless (or (region-active-p)
+              (mini-ontop--any-predicate-p))
     (let ((win (selected-window)))
       (unless (minibufferp (window-buffer win))
         (let ((dist (mini-ontop--distance-to-bottom win)))
