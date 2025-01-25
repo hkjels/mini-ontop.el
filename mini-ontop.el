@@ -106,7 +106,7 @@ Return t if point was moved, nil otherwise."
           (when (< dist mini-ontop-lines)
             (let ((needed (- mini-ontop-lines dist)))
               (push (list win buf (point)) mini-ontop--saved-positions)
-              (forward-line (- needed))
+              (previous-line needed)
               t)))))))
 
 (defun mini-ontop--move-point-up-if-needed-everywhere ()
